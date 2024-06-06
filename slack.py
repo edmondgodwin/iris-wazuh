@@ -181,15 +181,28 @@ def generate_msg(alert: any, options: any) -> any:
             "title": "Agentless Host",
             "value": alert['agentless']['host'],
         })
-    # Safely extract 'data' and then 'srcuser' and 'dstuser' from it
+    data_dict = alert.get('data', {})
+    # Updated snippet starts here
+    # Extracting srcuser and dstuser from the data field (for Linux/Unix systems)
     data_dict = alert.get('data', {})
     srcuser = data_dict.get('srcuser', 'N/A')
     dstuser = data_dict.get('dstuser', 'N/A')
-
-    # Adding srcuser and dstuser to the fields in a consistent format
     msg['fields'].extend([
         {"title": "Source User", "value": srcuser},
         {"title": "Destination User", "value": dstuser}
+    ])
+    
+    # Extracting subjectUserName for Windows systems (successful logon)
+    win_data = data_dict.get('win', {}).get('eventdata', {})
+    subject_user_name = win_data.get('subjectUserName', 'N/A')
+    msg['fields'].append({"title": "Username", "value": subject_user_name})
+    
+    # Extracting ipAddress and targetUserName for Windows systems (logon failure)
+    ip_address = win_data.get('ipAddress', 'N/A')
+    target_user_name = win_data.get('targetUserName', 'N/A')
+    msg['fields'].extend([
+        {"title": "IP Address", "value": ip_address},
+        {"title": "Target Username", "value": target_user_name}
     ])
     msg['fields'].append({"title": "Location", "value": alert['location']})
     msg['fields'].append({
